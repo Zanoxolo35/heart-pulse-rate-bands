@@ -1,0 +1,32 @@
+#include <PulseSensorPlayground.h>
+
+// --- Pulse Sensor Pin ---
+const int PulseWire = 32;   // Signal pin of pulse sensor → GPIO 32
+const int LED = 2;          // Onboard LED (blinks with each heartbeat)
+int Threshold = 550;        // Signal threshold (adjust if needed)
+
+PulseSensorPlayground pulseSensor;
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+
+  pulseSensor.analogInput(PulseWire);
+  pulseSensor.blinkOnPulse(LED);
+  pulseSensor.setThreshold(Threshold);
+
+  if (pulseSensor.begin()) {
+    Serial.println("Pulse Sensor is ready!");
+  } else {
+    Serial.println("Pulse Sensor FAILED to initialize. Check wiring.");
+  }
+}
+
+void loop() {
+  if (pulseSensor.sawStartOfBeat()) {
+    int myBPM = pulseSensor.getBeatsPerMinute();
+    Serial.print("BPM: ");
+    Serial.println(myBPM);
+  }
+  delay(20);
+}
