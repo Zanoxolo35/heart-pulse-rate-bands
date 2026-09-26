@@ -1,0 +1,205 @@
+/* VitalCare KZN dashboard
+   Idea: the pulse chart is drawn on ECG graph paper - the one thing every nurse and
+   family member already recognises as "heart reading". Everything else stays calm and plain. */
+
+:root {
+  --ink: #16324f;          /* main text, headings */
+  --ink-soft: #52667a;     /* secondary text */
+  --paper: #fafbfc;        /* page */
+  --panel: #ffffff;
+  --rule: #dfe5eb;         /* dividers */
+  --ecg-fine: #f6d9dd;     /* ECG paper small squares */
+  --ecg-bold: #eab2ba;     /* ECG paper big squares */
+  --trace: #1b1b1f;        /* the pulse line */
+  --high: #b3261e;         /* high pulse / danger */
+  --low: #1d5fa8;          /* low pulse */
+  --ok: #2f7d4f;           /* normal */
+  --wait: #9a6200;         /* in progress */
+  --focus: #2b6cb0;
+  --radius-s: 6px;
+  --radius-l: 14px;
+  font-size: 17px;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+h2 { font-size: 1.05rem; margin: 0 0 .75rem; }
+button { font: inherit; color: inherit; cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .7rem 1.25rem; background: var(--ink); color: #fff;
+  position: sticky; top: 0; z-index: 5;
+}
+.brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.1rem; }
+.brand-mark { width: 40px; height: 20px; color: #f3a7b2; }
+.topbar-right { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: flex-end; }
+.conn { display: inline-flex; align-items: center; gap: .4rem; font-size: .9rem; }
+.conn-dot { width: 10px; height: 10px; border-radius: 50%; background: #6fd49a; }
+.conn.down .conn-dot { background: #f0b429; }
+.alert-count {
+  background: var(--high); color: #fff; text-decoration: none; font-weight: 700;
+  padding: .25rem .7rem; border-radius: 999px; font-size: .9rem;
+}
+.lang { display: inline-flex; border: 1px solid rgba(255,255,255,.4); border-radius: var(--radius-s); overflow: hidden; }
+.lang button { background: none; border: 0; padding: .3rem .7rem; font-size: .9rem; color: #fff; }
+.lang button[aria-pressed="true"] { background: #fff; color: var(--ink); font-weight: 700; }
+
+/* ---------- Layout ---------- */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(250px, 300px) 1fr minmax(300px, 380px);
+  gap: 1.25rem; padding: 1.25rem; max-width: 1500px; margin: 0 auto;
+}
+.patients, .queue { min-width: 0; }
+.monitor {
+  min-width: 0; background: var(--panel); border: 1px solid var(--rule);
+  border-radius: var(--radius-l); padding: 1.25rem 1.5rem;
+}
+.empty { color: var(--ink-soft); max-width: 42ch; }
+
+/* ---------- Patient list: rows, not cards ---------- */
+.patient-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); }
+.patient-row {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: .5rem;
+  text-align: left; background: none; border: 0; border-bottom: 1px solid var(--rule);
+  border-left: 5px solid transparent; padding: .7rem .6rem .7rem .8rem;
+}
+.patient-row:hover { background: #f0f3f6; }
+.patient-row[aria-current="true"] { background: #e8eef5; }
+.patient-row.s-HIGH { border-left-color: var(--high); }
+.patient-row.s-LOW { border-left-color: var(--low); }
+.patient-row.s-NORMAL { border-left-color: var(--ok); }
+.patient-row.s-NO_SIGNAL { border-left-color: #b8c2cc; }
+.p-name { font-weight: 700; display: block; }
+.p-meta { font-size: .85rem; color: var(--ink-soft); }
+.p-bpm { font-size: 1.5rem; font-weight: 700; text-align: right; line-height: 1; }
+.p-bpm small { display: block; font-size: .7rem; font-weight: 400; color: var(--ink-soft); }
+.s-HIGH .p-bpm { color: var(--high); }
+.s-LOW .p-bpm { color: var(--low); }
+.p-flag { display: inline-block; margin-left: .35rem; color: var(--high); font-weight: 700; }
+
+/* ---------- Status badge (shape + word, never colour alone) ---------- */
+.badge { display: inline-flex; align-items: center; gap: .3rem; font-weight: 700; font-size: .9rem; }
+.badge::before { font-size: .8em; }
+.badge.HIGH { color: var(--high); } .badge.HIGH::before { content: '▲'; }
+.badge.LOW { color: var(--low); } .badge.LOW::before { content: '▼'; }
+.badge.NORMAL { color: var(--ok); } .badge.NORMAL::before { content: '●'; }
+.badge.NO_SIGNAL { color: var(--ink-soft); } .badge.NO_SIGNAL::before { content: '○'; }
+
+/* ---------- Monitor ---------- */
+.m-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; align-items: flex-start; }
+.m-name { font-size: 1.6rem; margin: 0; line-height: 1.2; }
+.m-sub { color: var(--ink-soft); margin: .2rem 0 0; }
+
+/* The memorable bit: an ECG strip with the live number pinned to it */
+.strip {
+  display: grid; grid-template-columns: 9.5rem 1fr; margin: 1.25rem 0;
+  border: 1px solid var(--ecg-bold); border-radius: var(--radius-s); overflow: hidden; background: #fff7f8;
+}
+.strip canvas { display: block; width: 100%; height: 260px; min-width: 0; }
+.readout {
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  padding: 1rem; background: #fff; border-right: 1px solid var(--ecg-bold);
+}
+.readout-num { font-size: 3.4rem; font-weight: 700; line-height: 1; }
+.readout-unit { font-size: .95rem; color: var(--ink-soft); }
+.readout.HIGH .readout-num { color: var(--high); }
+.readout.LOW .readout-num { color: var(--low); }
+.readout.HIGH .readout-num, .readout.LOW .readout-num { animation: beat 1s ease-in-out 2; }
+@keyframes beat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.08); } 30% { transform: scale(1); } }
+.strip-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: .5rem; font-size: .9rem; color: var(--ink-soft); }
+
+.m-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.25rem; }
+.m-grid h3 { font-size: 1rem; margin: 0 0 .5rem; }
+
+/* Plan switcher: three stacked choices with a plain-language line each */
+.plans { display: grid; gap: .4rem; }
+.plan {
+  display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem; align-items: center;
+  text-align: left; background: #fff; border: 1.5px solid var(--rule); border-radius: var(--radius-s);
+  padding: .55rem .7rem;
+}
+.plan .lvl {
+  grid-row: span 2; width: 1.8rem; height: 1.8rem; border-radius: 50%;
+  display: grid; place-items: center; font-weight: 700; background: #eef2f6;
+}
+.plan b { font-size: .95rem; }
+.plan span:last-child { font-size: .85rem; color: var(--ink-soft); }
+.plan[aria-pressed="true"] { border-color: var(--ink); background: #eef3f8; }
+.plan[aria-pressed="true"] .lvl { background: var(--ink); color: #fff; }
+
+.contacts { list-style: none; margin: 0; padding: 0; }
+.contacts li { padding: .45rem 0; border-bottom: 1px solid var(--rule); }
+.contacts a { color: var(--ink); font-weight: 700; }
+.contacts small { color: var(--ink-soft); display: block; }
+
+/* ---------- Alert queue ---------- */
+.alert-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .9rem; }
+.alert {
+  background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--high);
+  border-radius: var(--radius-s); padding: .9rem 1rem;
+}
+.alert.LOW { border-top-color: var(--low); }
+.alert-top { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
+.alert-name { font-weight: 700; background: none; border: 0; padding: 0; text-align: left; text-decoration: underline; text-underline-offset: 3px; }
+.alert-bpm { font-size: 1.4rem; font-weight: 700; }
+.alert.HIGH .alert-bpm { color: var(--high); }
+.alert.LOW .alert-bpm { color: var(--low); }
+.alert-meta { font-size: .85rem; color: var(--ink-soft); margin: .15rem 0 .6rem; }
+.crit { background: var(--high); color: #fff; font-size: .75rem; font-weight: 700; padding: .1rem .45rem; border-radius: 4px; margin-left: .3rem; }
+
+/* Progress: this really is a sequence, so the steps are numbered */
+.steps { list-style: none; display: flex; padding: 0; margin: 0 0 .7rem; gap: 2px; counter-reset: s; }
+.steps li {
+  flex: 1; font-size: .72rem; line-height: 1.2; padding: .35rem .3rem; background: #eef2f6; color: var(--ink-soft);
+  counter-increment: s;
+}
+.steps li::before { content: counter(s) '. '; font-weight: 700; }
+.steps li.done { background: #dcebe2; color: #1f5a37; }
+.steps li.now { background: var(--wait); color: #fff; font-weight: 700; }
+.steps li:first-child { border-radius: 4px 0 0 4px; }
+.steps li:last-child { border-radius: 0 4px 4px 0; }
+
+.people { font-size: .88rem; margin: 0 0 .7rem; display: grid; gap: .15rem; }
+.people .none { color: var(--wait); }
+.people a { color: var(--ink); font-weight: 700; }
+.actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.btn { border-radius: var(--radius-s); padding: .5rem .85rem; font-weight: 700; border: 1.5px solid var(--ink); background: #fff; }
+.btn.primary { background: var(--ink); color: #fff; }
+.btn:disabled { opacity: .5; cursor: wait; }
+
+.toast {
+  position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: #fff; padding: .7rem 1.1rem; border-radius: var(--radius-s); z-index: 10;
+}
+
+/* ---------- Smaller screens ---------- */
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: minmax(230px, 280px) 1fr; }
+  .queue { grid-column: 1 / -1; }
+  .alert-list { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+}
+@media (max-width: 720px) {
+  :root { font-size: 16px; }
+  .layout { grid-template-columns: 1fr; padding: .8rem; }
+  .queue { order: -1; }                 /* on a phone, alerts come first */
+  .m-grid { grid-template-columns: 1fr; }
+  .strip { grid-template-columns: 1fr; }
+  .readout { flex-direction: row; align-items: baseline; gap: .4rem; border-right: 0; border-bottom: 1px solid var(--ecg-bold); padding: .6rem 1rem; }
+  .strip canvas { height: 200px; }
+  .readout-num { font-size: 2.6rem; }
+  .brand span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .readout .readout-num { animation: none !important; }
+}

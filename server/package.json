@@ -1,0 +1,20 @@
+{
+  "name": "vital-care-server",
+  "version": "1.0.0",
+  "description": "Backend + dashboard for Smart Vital Monitoring & Rapid Care for Elderly Women (KZN)",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "simulate": "node tools/simulate-device.js",
+    "reset-db": "node tools/reset-db.js"
+  },
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2"
+  }
+}

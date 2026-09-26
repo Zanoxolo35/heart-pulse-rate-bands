@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VitalCare KZN - Response dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Atkinson Hyperlegible: designed for low-vision readers, so labels stay clear for older family members -->
+  <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 20" aria-hidden="true"><path d="M0 12h9l3-8 5 14 4-10 3 4h16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/></svg>
+      <span data-i18n="appName">VitalCare KZN</span>
+    </div>
+    <div class="topbar-right">
+      <a class="alert-count" href="#alerts" id="alertCount" hidden></a>
+      <span class="conn" id="conn"><span class="conn-dot"></span><span id="connText">Live</span></span>
+      <div class="lang" role="group" aria-label="Language / Ulimi">
+        <button type="button" data-lang="en" aria-pressed="true">English</button>
+        <button type="button" data-lang="zu" aria-pressed="false">isiZulu</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- Left: everyone being monitored -->
+    <section class="patients" aria-labelledby="patientsTitle">
+      <h2 id="patientsTitle" data-i18n="patients">Patients</h2>
+      <ul id="patientList" class="patient-list"></ul>
+    </section>
+
+    <!-- Middle: the selected patient -->
+    <section class="monitor" id="monitor" aria-live="polite">
+      <p class="empty" data-i18n="choosePatient">Choose a patient on the left to see her pulse.</p>
+    </section>
+
+    <!-- Right: alert queue -->
+    <section class="queue" id="alerts" aria-labelledby="alertsTitle">
+      <h2 id="alertsTitle" data-i18n="alerts">Needs action</h2>
+      <ol id="alertList" class="alert-list" aria-live="assertive"></ol>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
